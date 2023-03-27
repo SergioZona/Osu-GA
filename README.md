@@ -4,7 +4,7 @@ Proyecto de grado del programa de Ingeniería de Sistemas y Computación (ISIS) 
 
 ## Descripción
 
-Este proyecto desarrolla un Game Agent (que pueda jugar [Osu!](https://osu.ppy.sh/home) implementando técnicas de inteligencia artificial.
+Este proyecto desarrolla un Game Agent (que pueda jugar [Osu!](https://osu.ppy.sh/home)) implementando técnicas de inteligencia artificial.
 
 - [Sergio Julian Zona Moreno](https://github.com/SergioZona) (sj.zona@uniandes.edu.co)
 
