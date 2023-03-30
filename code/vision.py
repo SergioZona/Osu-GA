@@ -75,7 +75,6 @@ class Vision:
 
     def find(self, haystack_img, threshold=0.5, debug_mode=None, gpu=False):
         result = None
-        circles = None
 
         if gpu:
             gsrc = cv.cuda_GpuMat()
