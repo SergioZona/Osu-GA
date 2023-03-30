@@ -2,7 +2,6 @@ import cv2 as cv
 import numpy as np
 from cv2 import cuda
 
-
 class Vision:
 
     # properties
@@ -25,9 +24,58 @@ class Vision:
         # There are 6 methods to choose from:
         # TM_CCOEFF, TM_CCOEFF_NORMED, TM_CCORR, TM_CCORR_NORMED, TM_SQDIFF, TM_SQDIFF_NORMED
         self.method = method
+    
+    def detect_circles(self, haystack_img):
+        # This code does not work with GPU.
+        # The implementation is with CPU: https://docs.opencv.org/3.4/d4/d70/tutorial_hough_circle.html
+        gray = cv.cvtColor(haystack_img, cv.COLOR_BGR2GRAY)            
+        gray = cv.medianBlur(gray, 5)
+        
+        rows = gray.shape[0]
+
+        circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1, rows / 8,
+                                param1=100, param2=100,
+                                minRadius=25, maxRadius=50)
+        
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            for i in circles[0, :]:
+                center = (i[0], i[1])
+                # circle center
+                cv.circle(haystack_img, center, 1, (0, 100, 100), 3)
+                # circle outline
+                radius = i[2]
+                cv.circle(haystack_img, center, radius, (255, 0, 255), 3)
+            
+        return circles
+    
+    def detect_external_circles(self, haystack_img):
+        # This code does not work with GPU.
+        # The implementation is with CPU: https://docs.opencv.org/3.4/d4/d70/tutorial_hough_circle.html
+        gray = cv.cvtColor(haystack_img, cv.COLOR_BGR2GRAY)            
+        gray = cv.medianBlur(gray, 5)
+        
+        rows = gray.shape[0]
+
+        circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1, rows / 8,
+                                param1=100, param2=100,
+                                minRadius=55, maxRadius=100)
+        
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            for i in circles[0, :]:
+                center = (i[0], i[1])
+                # circle center
+                cv.circle(haystack_img, center, 1, (0, 100, 100), 3)
+                # circle outline
+                radius = i[2]
+                cv.circle(haystack_img, center, radius, (20, 9, 179), 3)
+            
+        return circles
 
     def find(self, haystack_img, threshold=0.5, debug_mode=None, gpu=False):
         result = None
+        circles = None
 
         if gpu:
             gsrc = cv.cuda_GpuMat()
@@ -39,9 +87,9 @@ class Vision:
 
             matcher = cv.cuda.createTemplateMatching(cv.CV_8UC1, cv.TM_CCOEFF_NORMED)
             gresult = matcher.match(gsrc, gtmpl)
-            
+
             result = gresult.download()
-            
+
             #min_valg, max_valg, min_locg, max_locg = cv.minMaxLoc(resultg)
 
         else:
@@ -70,7 +118,7 @@ class Vision:
         # in the result. I've set eps to 0.5, which is:
         # "Relative difference between sides of the rectangles to merge them into a group."
         rectangles, weights = cv.groupRectangles(rectangles, groupThreshold=1, eps=0.5)
-        #print(rectangles)
+        #print(rectangles)       
 
         points = []
         if len(rectangles):
@@ -102,12 +150,11 @@ class Vision:
                     cv.drawMarker(haystack_img, (center_x, center_y), 
                                 color=marker_color, markerType=marker_type, 
                                 markerSize=40, thickness=2)
-                # elif debug_mode == 'point':
-                    # Draw the center point
-                    # hola = 2
-                    # cv.drawMarker(haystack_img, (center_x, center_y), 
-                    #             color=marker_color, markerType=marker_type, 
-                    #             markerSize=2, thickness=2)
+                elif debug_mode == 'point':
+                    #Draw the center point
+                    cv.drawMarker(haystack_img, (center_x, center_y), 
+                                color=marker_color, markerType=marker_type, 
+                                markerSize=2, thickness=2)
 
         if debug_mode:
             cv.imshow('Matches', haystack_img)

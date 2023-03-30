@@ -16,7 +16,9 @@ class WindowCapture:
     # constructor
     def __init__(self, window_name=None):
         # find the handle for the window we want to capture.
-        # if no window name is given, capture the entire screen
+        # if no window name is given, capture the entire screen        
+        window_name = self.find_window_startswith(window_name)
+
         if window_name is None:
             self.hwnd = win32gui.GetDesktopWindow()
         else:
@@ -52,6 +54,20 @@ class WindowCapture:
         # The values from GetWindowRect are incorrect, we correct them manually
         self.w = 800
         self.h = 600
+    
+
+    def find_window_startswith(self, window_name):
+        def callback(handle, data):
+            if win32gui.IsWindowVisible(handle) and window_name.lower() in win32gui.GetWindowText(handle).lower():
+                data.append(win32gui.GetWindowText(handle))
+            return True
+        windows = []
+        win32gui.EnumWindows(callback, windows)
+        windows = [w for w in windows if w.lower().startswith(window_name.lower())]
+        if windows:
+            return windows[0]
+        else:
+            return None
 
     def get_screenshot(self):
 
