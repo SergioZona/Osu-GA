@@ -24,7 +24,49 @@ class Vision:
         # There are 6 methods to choose from:
         # TM_CCOEFF, TM_CCOEFF_NORMED, TM_CCORR, TM_CCORR_NORMED, TM_SQDIFF, TM_SQDIFF_NORMED
         self.method = method
-    
+
+    def detect_slide_notes(self, haystack_img):
+        # Convert image to grayscale
+        gray_img = cv.cvtColor(haystack_img, cv.COLOR_BGR2GRAY)
+        
+        # Apply threshold to create binary image
+        _, thresh_img = cv.threshold(gray_img, 127, 255, cv.THRESH_BINARY)
+        
+        # Find contours in binary image
+        contours, _ = cv.findContours(thresh_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        
+        # Filter contours by size
+        slider_contours = []
+        for contour in contours:
+            x, y, w, h = cv.boundingRect(contour)
+            if w > 10 and h > 10 and w < 100 and h < 100:
+                slider_contours.append(contour)
+        
+        # Analyze contours to detect slider notes
+        slide_notes = []
+        # Create blank image to draw contours on for visualization
+        vis_img = np.zeros(haystack_img.shape, dtype=np.uint8)
+        for contour in slider_contours:
+            # Check if contour is rectangular
+            epsilon = 0.02 * cv.arcLength(contour, True)
+            approx = cv.approxPolyDP(contour, epsilon, True)
+            if len(approx) == 4:
+                # Check if contour has smooth texture
+                x, y, w, h = cv.boundingRect(contour)
+                roi = gray_img[y:y+h, x:x+w]
+                laplacian = cv.Laplacian(roi, cv.CV_64F)
+                var = np.var(laplacian)
+                if var < 500:
+                    # Contour is a slider note
+                    slide_notes.append(approx)
+                    # Draw contour on blank image for visualization
+                    cv.drawContours(vis_img, [approx], -1, (0, 0, 255), 2)
+        
+        # Paint detected slider notes on input image
+        cv.drawContours(haystack_img, slide_notes, -1, (0, 0, 255), 2)
+        
+        return slide_notes, haystack_img, vis_img
+        
     def detect_circles(self, haystack_img):
         # This code does not work with GPU.
         # The implementation is with CPU: https://docs.opencv.org/3.4/d4/d70/tutorial_hough_circle.html
@@ -35,7 +77,7 @@ class Vision:
 
         circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1, rows / 8,
                                 param1=100, param2=100,
-                                minRadius=25, maxRadius=50)
+                                minRadius=25, maxRadius=100)
         
         if circles is not None:
             circles = np.uint16(np.around(circles))
